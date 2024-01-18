@@ -1,2 +1,4 @@
 # Seg-Aliasing
-ICLR2024 When Sementic Segmentation Meets Frequency Aliasing
+ICLR 2024: When Semantic Segmentation Meets Frequency Aliasing
+
+The code is being prepared. Coming soon.
