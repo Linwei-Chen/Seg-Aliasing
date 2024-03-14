@@ -37,8 +37,6 @@ pip install mmcv-full==1.5.3 -f https://download.openmmlab.com/mmcv/dist/cu113/t
 
 ### Results
 
-Results are reported on Cityscape val set.
-
 You can obtain detailed results by:
 
 ```
@@ -49,28 +47,26 @@ python ~/SegAliasing/test.py \
 ~checkpoint.pth --eval mIoU
 ```
 
-| Method                         | mIoU↑    | BIoU↑    | BAcc↑    | FErr↓    | MErr↓    | DErr↓    |
-| ------------------------------ | -------- | -------- | -------- | -------- | -------- | -------- |
-| UPerNet-R50 (Baseline)         | 78.1     | 61.8     | 74.4     | 27.2     | 25.1     | 26.9     |
-| $\frac{1}{4}\times1.0$         | 78.6     | 62       | 74.9     | 26.7     | 24.8     | 26.7     |
-| $\frac{1}{4}\times1.1$         | 78.7     | 62.3     | 75.4     | 26.7     | 24.2     | 26.1     |
-| $\frac{1}{4}\times1.2$         | 78.8     | 62.4     | 75.4     | 26.3     | 24.3     | 26.2     |
-| $\frac{1}{4}\times1.3$         | 79.2     | 62.4     | 75.4     | 26.2     | 24.3     | 26.1     |
-| **$\frac{1}{4}\times \sqrt2$** | **79.3** | **62.6** | **75.7** | **26.0** | **24.0** | **25.9** |
-| $\frac{1}{4}\times1.5$         | 78.9     | 62.4     | 75.0     | 26.6     | 24.6     | 26.4     |
-| $\frac{1}{4}\times1.6$         | 79.1     | 62.1     | 75.2     | 26.7     | 24.5     | 26.5     |
+| Cityscapes                                                   | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
+| ------------------------------------------------------------ | ----- | ----- | ----- | ----- | ----- | ----- |
+| UPerNet-R50 (Baseline)                                       | 78.1  | 61.8  | 74.4  | 27.2  | 25.1  | 26.9  |
+| Ours ([ckpt](https://pan.baidu.com/s/1xCH1jSs-NSojYotsMUrtqA), code: iclr) | 79.7  | 63.2  | 76.2  | 25.2  | 23.3  | 24.8  |
 
+| PASCAL VOC 2012                                              | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
+| ------------------------------------------------------------ | ----- | ----- | ----- | ----- | ----- | ----- |
+| UPerNet-R50 (Baseline)                                       | 74.3  | 61.0  | 73.4  | 27.8  | 24.9  | 24.5  |
+| Ours ([ckpt](https://pan.baidu.com/s/1lNFnsazd9q1YtJFgmvTOow), code: iclr) | 76.1  | 62.7  | 74.9  | 26.0  | 24.0  | 23.6  |
 
+| ADE20k                                                       | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
+| ------------------------------------------------------------ | ----- | ----- | ----- | ----- | ----- | ----- |
+| UPerNet-R50 (Baseline)                                       | 38.87 | 29.5  | 40.5  | 60.4  | 58.9  | 60.2  |
+| Ours ([ckpt](链接: https://pan.baidu.com/s/1iHm-8XB8ysrhgMHSw7zo6g), code: iclr) | 40.35 | 31.2  | 43.3  | 57.9  | 55.6  | 56.7  |
 
-| PASCAL VOC 2012        | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
-| ---------------------- | ----- | ----- | ----- | ----- | ----- | ----- |
-| UPerNet-R50 (Baseline) | 74.3  | 61.0  | 73.4  | 27.8  | 24.9  | 24.5  |
-| Ours                   | 76.1  | 62.7  | 74.9  | 26.0  | 24.0  | 23.6  |
+Note:
 
-| ADE20k   | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
-| -------- | ----- | ----- | ----- | ----- | ----- | ----- |
-| Baseline | 38.87 | 29.5  | 40.5  | 60.4  | 58.9  | 60.2  |
-| Ours     | 40.35 | 31.2  | 43.3  | 57.9  | 55.6  | 56.7  |
+Configs can be find [here](./mmseg_custom/configs).
+
+Some checkpoints may yield higher results than those reported. We also recommend pretraining the proposed method on ImageNet to fully unleash its potential.
 
 ## Citation
 
@@ -102,4 +98,4 @@ If you use our dataset or code for research, please cite this paper and related 
 
 ## Contact
 
-If you find any problem, please feel free to contact me (Linwei at  chenlinwei@bit.edu.cn). A brief self-introduction (including your name, affiliation, and position) is required, if you would like to get in-depth help from me. I'd be glad to talk with you if more information (e.g. your personal website link) is attached.
+If you find any problem, please feel free to contact me (Linwei at  chenlinwei@bit.edu.cn, charleschen2013@163.com). A brief self-introduction (including your name, affiliation, and position) is required, if you would like to get in-depth help from me. I'd be glad to talk with you if more information (e.g. your personal website link) is attached.
