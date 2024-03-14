@@ -60,7 +60,7 @@ python ~/SegAliasing/test.py \
 | ADE20k                                                       | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
 | ------------------------------------------------------------ | ----- | ----- | ----- | ----- | ----- | ----- |
 | UPerNet-R50 (Baseline)                                       | 38.87 | 29.5  | 40.5  | 60.4  | 58.9  | 60.2  |
-| Ours ([ckpt](链接: https://pan.baidu.com/s/1iHm-8XB8ysrhgMHSw7zo6g), code: iclr) | 40.35 | 31.2  | 43.3  | 57.9  | 55.6  | 56.7  |
+| Ours ([ckpt](https://pan.baidu.com/s/1iHm-8XB8ysrhgMHSw7zo6g), code: iclr) | 40.35 | 31.2  | 43.3  | 57.9  | 55.6  | 56.7  |
 
 Note:
 
