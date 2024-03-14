@@ -18,9 +18,6 @@ from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmcv.runner import BaseModule
 from mmcv.utils.parrots_wrapper import _BatchNorm
 from torch.utils.checkpoint import checkpoint
-# from mmseg.models.segmentors.AdaConv import LocalPixelRelationConv
-# from interp2d import test_2
-# test_2()
 from torch.utils.tensorboard import SummaryWriter
 import copy
 from mmseg.models.builder import BACKBONES
@@ -980,8 +977,9 @@ class ResNetV1cWithBlur(ResNetV1c):
         return tuple(outs)
     
 class FLC_Pooling(nn.Module):
-    # pooling trough selecting only the low frequent part in the fourier domain and only using this part to go back into the spatial domain
-    # save computations as we do not need to do the downsampling trough conv with stride 2
+    '''
+    de-aliasing filter
+    '''
     def __init__(self, downsample=False, freq_thres=0.25):
         super(FLC_Pooling, self).__init__()
         assert freq_thres < (0.5 + 1e-8)
@@ -1191,207 +1189,10 @@ class BasicConv(nn.Module):
             x = self.relu(x)
         return x
 
-class ChannelPool(nn.Module):
-    def forward(self, x):
-        return torch.cat( (torch.max(x,1)[0].unsqueeze(1), torch.mean(x,1).unsqueeze(1)), dim=1 )
-
-class SpatialGate(nn.Module):
-    def __init__(self, out=1):
-        super(SpatialGate, self).__init__()
-        kernel_size = 7
-        self.compress = ChannelPool()
-        self.spatial = BasicConv(2, out, kernel_size, stride=1, padding=(kernel_size-1) // 2, relu=False)
-    def forward(self, x):
-        x_compress = self.compress(x)
-        x_out = self.spatial(x_compress)
-        scale = F.sigmoid(x_out) # broadcasting         
-        return scale
-
-class FrequencyMix(nn.Module):
-    def __init__(self, 
-                in_channels,
-                k_list=[2],
-                # freq_list=[2, 3, 5, 7, 9, 11],
-                fs_feat='feat',
-                lp_type='freq_channel_att',
-                act='sigmoid',
-                channel_res=True,
-                spatial='conv',
-                spatial_group=1,
-                ):
-        super().__init__()
-        k_list.sort()
-        # print()
-        self.k_list = k_list
-        # self.freq_list = freq_list
-        self.lp_list = nn.ModuleList()
-        self.freq_weight_conv_list = nn.ModuleList()
-        self.fs_feat = fs_feat
-        self.lp_type = lp_type
-        self.in_channels = in_channels
-        self.channel_res = channel_res
-        if spatial_group > 64: spatial_group=in_channels
-        self.spatial_group = spatial_group
-        if spatial == 'conv':
-            self.freq_weight_conv = nn.Conv2d(in_channels=in_channels, 
-                                            out_channels=(len(k_list) + 1) * self.spatial_group, 
-                                            stride=1,
-                                            kernel_size=3, padding=1, bias=True) 
-            self.freq_weight_conv.weight.data.zero_()
-            self.freq_weight_conv.bias.data.zero_()   
-        elif spatial == 'cbam': 
-            self.freq_weight_conv = SpatialGate(out=len(k_list) + 1)
-        else:
-            raise NotImplementedError
-        
-        if self.lp_type == 'avgpool':
-            for k in k_list:
-                self.lp_list.append(nn.Sequential(
-                nn.ReflectionPad2d(padding= k // 2),
-                # nn.ZeroPad2d(padding= k // 2),
-                nn.AvgPool2d(kernel_size=k, padding=0, stride=1)
-            ))
-        elif self.lp_type == 'freq':
-            pass
-        elif self.lp_type in ('freq_channel_att', 'freq_channel_att_reduce_high'):
-            # self.channel_att= nn.ModuleList()
-            # for i in 
-            self.channel_att = nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),
-                nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, padding=0, bias=True),
-                nn.Sigmoid()
-            )
-            self.channel_att[1].weight.data.zero_()
-            self.channel_att[1].bias.data.zero_()
-            # self.channel_att.weight.data.zero_()
-        elif self.lp_type in ('freq_eca', ):
-            # self.channel_att_list = nn.ModuleList()
-            # for i in 
-            self.channel_att = nn.ModuleList(
-                [eca_layer(self.in_channels, k_size=9) for _ in range(len(k_list) + 1)]
-            )
-        elif self.lp_type in ('freq_channel_se', ):
-            # self.channel_att_list = nn.ModuleList()
-            # for i in 
-            self.channel_att = SELayer(self.in_channels, ratio=16)
-        else:
-            raise NotImplementedError
-        
-        self.act = act
-        # self.freq_weight_conv_list.append(nn.Conv2d(self.deform_groups * 3 * self.kernel_size[0] * self.kernel_size[1], 1, kernel_size=1, padding=0, bias=True))
-
-
-    def forward(self, x):
-        freq_weight = self.freq_weight_conv(x)
-        
-        if self.act == 'sigmoid':
-            freq_weight = freq_weight.sigmoid() * 2
-        elif self.act == 'softmax':
-            freq_weight = freq_weight.softmax(dim=1) * freq_weight.shape[1]
-        else:
-            raise NotImplementedError
-        
-        x_list = []
-        if self.lp_type == 'avgpool':
-            # for avg, freq_weight in zip(self.avg_list, self.freq_weight_conv_list):
-            pre_x = x
-            for idx, avg in enumerate(self.lp_list):
-                low_part = avg(x)
-                high_part = pre_x - low_part
-                pre_x = low_part
-                x_list.append(freq_weight[:, idx:idx+1] * high_part)
-            x_list.append(pre_x * freq_weight[:, len(x_list):len(x_list)+1])
-        elif self.lp_type == 'freq':
-            pre_x = x
-            b, _c, h, w = freq_weight.shape
-            freq_weight = freq_weight.reshape(b, self.spatial_group, -1, h, w)
-            x_fft = torch.fft.fftshift(torch.fft.fft2(x))
-            h, w = x.shape[-2:]
-            for idx, freq in enumerate(self.k_list):
-                mask = torch.zeros_like(x[:, 0:1, :, :], device=x.device)
-                mask[:,:,int(h/2 - h/(2 * freq)):int(h/2 + h/(2 * freq)), int(w/2 - w/(2 * freq)):int(w/2 + w/(2 * freq))] = 1.0
-                low_part = torch.fft.ifft2(torch.fft.ifftshift(x_fft * mask)).real
-                high_part = pre_x - low_part
-                pre_x = low_part
-                tmp = freq_weight[:, :, idx:idx+1] * high_part.reshape(b, self.spatial_group, -1, h, w)
-                x_list.append(tmp.reshape(b, -1, h, w))
-            tmp = freq_weight[:, :, len(x_list):len(x_list)+1] * pre_x.reshape(b, self.spatial_group, -1, h, w)
-            x_list.append(tmp.reshape(b, -1, h, w))
-        elif self.lp_type in ('freq_channel_att', 'freq_eca', 'freq_channel_se'):
-            pre_freq = 1
-            pre_x = x
-            x_fft = torch.fft.fftshift(torch.fft.fft2(x))
-            h, w = x.shape[-2:]
-            h, w =  int(h), int(w) 
-            for idx, freq in enumerate(self.k_list):
-                mask = torch.zeros_like(x[:, 0:1, :, :], device=x.device)
-                channel_att_mask = mask.clone()
-                # mask[:,:,int(h/2 - h/(2 * freq)):int(h/2 + h/(2 * freq)), int(w/2 - w/(2 * freq)):int(w/2 + w/(2 * freq))] = 1.0
-                mask[:,:,round(h/2 - h/(2 * freq)):round(h/2 + h/(2 * freq)), round(w/2 - w/(2 * freq)):round(w/2 + w/(2 * freq))] = 1.0
-                low_part = torch.fft.ifft2(torch.fft.ifftshift(x_fft * mask)).real
-                high_part = pre_x - low_part
-                pre_x = low_part
-                # print('hw:', h, w)
-                # print(idx, 'int:', freq, int(h/2 - h/(2 * pre_freq)), int(h/2 + h/(2 * pre_freq)), int(w/2 - w/(2 * pre_freq)), int(w/2 + w/(2 * pre_freq)))
-                # print(idx, 'int:', freq, int(h/2 - h/(2 * freq)), int(h/2 + h/(2 * freq)), int(w/2 - w/(2 * freq)), int(w/2 + w/(2 * freq)))
-                # print('hw:', h, w)
-                # print(idx, ':', freq, round(h/2 - h/(2 * pre_freq)), round(h/2 + h/(2 * pre_freq)), round(w/2 - w/(2 * pre_freq)), round(w/2 + w/(2 * pre_freq)))
-                # print(idx, ':', freq, round(h/2 - h/(2 * freq)), round(h/2 + h/(2 * freq)), round(w/2 - w/(2 * freq)), round(w/2 + w/(2 * freq)))
-                channel_att_mask[:,:,round(h/2 - h/(2 * pre_freq)):round(h/2 + h/(2 * pre_freq)), round(w/2 - w/(2 * pre_freq)):round(w/2 + w/(2 * pre_freq))] = 1.0
-                channel_att_mask[:,:,round(h/2 - h/(2 * freq)):round(h/2 + h/(2 * freq)), round(w/2 - w/(2 * freq)):round(w/2 + w/(2 * freq))] = 0.0
-                # pre_freq = int(freq)
-                pre_freq = freq
-                if isinstance(self.channel_att, nn.ModuleList):
-                    # c_att = self.channel_att[idx](((x_fft * channel_att_mask).abs() + 1).log())
-                    c_att = self.channel_att[idx]((x_fft * channel_att_mask).abs())
-                else:
-                    # c_att = self.channel_att(((x_fft * channel_att_mask).abs() + 1).log())
-                    c_att = self.channel_att((x_fft * channel_att_mask).abs())
-                    # c_att = self.channel_att((x_fft * channel_att_mask).abs() / (F.adaptive_avg_pool2d(x_fft.abs(), 1) + 1e-8))
-                c_att = (c_att + 0.5) if self.channel_res else c_att
-                x_list.append(freq_weight[:, idx:idx+1] * high_part * c_att)
-
-            channel_att_mask = torch.zeros_like(x[:, 0:1, :, :], device=x.device)
-            channel_att_mask[:,:,round(h/2 - h/(2 * pre_freq)):round(h/2 + h/(2 * pre_freq)), round(w/2 - w/(2 * pre_freq)):round(w/2 + w/(2 * pre_freq))] = 1.0
-            if isinstance(self.channel_att, nn.ModuleList):
-                # c_att = self.channel_att[len(x_list)](((x_fft * channel_att_mask).abs() + 1).log())
-                c_att = self.channel_att[idx]((x_fft * channel_att_mask).abs())
-            else:
-                # c_att = self.channel_att(((x_fft * channel_att_mask).abs() + 1).log())
-                c_att = self.channel_att((x_fft * channel_att_mask).abs())
-                # c_att = self.channel_att((x_fft * channel_att_mask).abs() / (F.adaptive_avg_pool2d(x_fft.abs(), 1) + 1e-8))
-            c_att = (c_att + 0.5) if self.channel_res else c_att
-            x_list.append(pre_x * freq_weight[:, len(x_list):len(x_list)+1] * c_att)
-        elif self.lp_type == 'freq_channel_att_reduce_high':
-            pre_freq = 1
-            pre_x = x
-            x_fft = torch.fft.fftshift(torch.fft.fft2(x))
-            h, w = x.shape[-2:]
-            h, w =  int(h), int(w) 
-            for idx, freq in enumerate(self.k_list):
-                mask = torch.zeros_like(x[:, 0:1, :, :], device=x.device)
-                channel_att_mask = mask.clone()
-                mask[:,:,int(h/2 - h/(2 * freq)):int(h/2 + h/(2 * freq)), int(w/2 - w/(2 * freq)):int(w/2 + w/(2 * freq))] = 1.0
-                low_part = torch.fft.ifft2(torch.fft.ifftshift(x_fft * mask)).real
-                high_part = pre_x - low_part
-                pre_x = low_part
-
-                channel_att_mask[:,:,round(h/2 - h/(2 * pre_freq)):round(h/2 + h/(2 * pre_freq)), round(w/2 - w/(2 * pre_freq)):round(w/2 + w/(2 * pre_freq))] = 1.0
-                channel_att_mask[:,:,round(h/2 - h/(2 * freq)):round(h/2 + h/(2 * freq)), round(w/2 - w/(2 * freq)):round(w/2 + w/(2 * freq))] = 0.0
-                pre_freq = int(freq)
-                # c_att = self.channel_att((x_fft * channel_att_mask).abs() / (F.adaptive_avg_pool2d(x_fft.abs(), 1) + 1e-8))
-                c_att = self.channel_att((x_fft * channel_att_mask).abs())
-                x_list.append((1. - freq_weight[:, idx:idx+1]) * high_part * (1. - c_att))
-            channel_att_mask = torch.zeros_like(x[:, 0:1, :, :], device=x.device)
-            channel_att_mask[:,:,round(h/2 - h/(2 * pre_freq)):round(h/2 + h/(2 * pre_freq)), round(w/2 - w/(2 * pre_freq)):round(w/2 + w/(2 * pre_freq))] = 1.0
-            # c_att = self.channel_att((x_fft * channel_att_mask).abs() / (F.adaptive_avg_pool2d(x_fft.abs(), 1) + 1e-8))
-            c_att = self.channel_att((x_fft * channel_att_mask).abs())
-            x_list.append(pre_x * (freq_weight[:, len(x_list):len(x_list)+1] + 1) * (c_att + 1))
-        x = sum(x_list)
-        return x
-
-
 class _FrequencyMix(nn.Module):
+    '''
+    Frequency Mixing module
+    '''
     def __init__(self, 
                 in_channels,
                 k_list=[2],
@@ -1591,32 +1392,3 @@ class NyResNetFreezePretrain(NyResNet):
                     m.eval()
                     param.requires_grad = False
                 print(name, param.requires_grad)
-
-@BACKBONES.register_module()
-class ResNetFreqMix(ResNetV1cWithBlur):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.fm1 = FrequencyMix(64*self.block.expansion, k_list=[1.4], fs_feat='feat', lp_type='freq_channel_se', act='sigmoid', channel_res=False,)
-        self.fm2 = FrequencyMix(128*self.block.expansion, k_list=[1.4], fs_feat='feat', lp_type='freq_channel_se', act='sigmoid', channel_res=False,)
-        self.fm3 = FrequencyMix(256*self.block.expansion, k_list=[1.4], fs_feat='feat', lp_type='freq_channel_se', act='sigmoid', channel_res=False,)
-        # self.fm4 = FrequencySelection(512*self.block.expansion, k_list=[1.4], fs_feat='feat', lp_type='freq_channel_se', act='sigmoid', channel_res=False,)
-        self.fm4 = nn.Identity()
-
-    def forward(self, x):
-        """Forward function."""
-        if self.deep_stem:
-            x = self.stem(x)
-        else:
-            x = self.conv1(x)
-            x = self.norm1(x)
-            x = self.relu(x)
-        outs = []
-        for i, layer_name in enumerate(self.res_layers):
-            res_layer = getattr(self, layer_name)
-            x = self.AdaD[i](x)
-            x = res_layer(x)
-            fm = getattr(self, f'fm{i+1}')
-            x = fm(x)
-            if i in self.out_indices:
-                outs.append(x)
-        return tuple(outs)
