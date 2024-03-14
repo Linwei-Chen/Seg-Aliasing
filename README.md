@@ -39,6 +39,16 @@ pip install mmcv-full==1.5.3 -f https://download.openmmlab.com/mmcv/dist/cu113/t
 
 Results are reported on Cityscape val set.
 
+You can obtain detailed results by:
+
+```
+python ~/SegAliasing/test.py \
+
+~/configs/upernet_r50-d32_cityscapes.py \
+
+~checkpoint.pth --eval mIoU
+```
+
 | Method                         | mIoU↑    | BIoU↑    | BAcc↑    | FErr↓    | MErr↓    | DErr↓    |
 | ------------------------------ | -------- | -------- | -------- | -------- | -------- | -------- |
 | UPerNet-R50 (Baseline)         | 78.1     | 61.8     | 74.4     | 27.2     | 25.1     | 26.9     |
@@ -51,6 +61,16 @@ Results are reported on Cityscape val set.
 | $\frac{1}{4}\times1.6$         | 79.1     | 62.1     | 75.2     | 26.7     | 24.5     | 26.5     |
 
 
+
+| PASCAL VOC 2012        | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
+| ---------------------- | ----- | ----- | ----- | ----- | ----- | ----- |
+| UPerNet-R50 (Baseline) | 74.3  | 61.0  | 73.4  | 27.8  | 24.9  | 24.5  |
+| Ours                   | 76.1  | 62.7  | 74.9  | 26.0  | 24.0  | 23.6  |
+
+| ADE20k   | mIoU↑ | BIoU↑ | BAcc↑ | FErr↓ | MErr↓ | DErr↓ |
+| -------- | ----- | ----- | ----- | ----- | ----- | ----- |
+| Baseline | 38.87 | 29.5  | 40.5  | 60.4  | 58.9  | 60.2  |
+| Ours     | 40.35 | 31.2  | 43.3  | 57.9  | 55.6  | 56.7  |
 
 ## Citation
 
