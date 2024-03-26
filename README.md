@@ -1,6 +1,6 @@
 # ICLR2024 When Semantic Segmentation Meets Frequency Aliasing
 
-The [official implementation](https://github.com/Linwei-Chen/Seg-Aliasing)  of our ICLR 2024 paper "[WHEN SEMANTIC SEGMENTATION MEETS FREQUENCY ALIASING](https://openreview.net/forum?id=SYBdkHcXXK)".
+The [official implementation](https://github.com/Linwei-Chen/Seg-Aliasing) of our ICLR 2024 paper "[WHEN SEMANTIC SEGMENTATION MEETS FREQUENCY ALIASING](https://openreview.net/forum?id=SYBdkHcXXK)", which is also available at [https://github.com/ying-fu/Seg-Aliasing](https://github.com/ying-fu/Seg-Aliasing).
 
 Interested readers are also referred to an insightful [Note](https://zhuanlan.zhihu.com/p/678596052) about this work in Zhihu. 
 
