@@ -64,7 +64,7 @@ python ~/SegAliasing/test.py \
 
 Note:
 
-Configs can be find [here](./mmseg_custom/configs).
+Configs can be found [here](./mmseg_custom/configs).
 
 Some checkpoints may yield higher results than those reported. We also recommend pretraining the proposed method on ImageNet to fully unleash its potential.
 
