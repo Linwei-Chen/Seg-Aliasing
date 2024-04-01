@@ -24,9 +24,13 @@ Illustration of three boundary error types.
 
 ### Installation
 
-Our code is based on [MMSegmentation](https://github.com/open-mmlab/mmsegmentation).
+Our code is based on [MMSegmentation](https://github.com/open-mmlab/mmsegmentation). You can install mmseg by:
 
-Please refer to [get_started.md](https://github.com/open-mmlab/mmsegmentation/blob/main/docs/en/get_started.md#installation) for installation and [dataset_prepare.md](https://github.com/open-mmlab/mmsegmentation/blob/main/docs/en/user_guides/2_dataset_prepare.md#prepare-datasets) for dataset preparation.
+```
+pip install mmsegmentation==0.25.0
+```
+
+Please refer to [get_started.md](https://github.com/open-mmlab/mmsegmentation/blob/main/docs/en/get_started.md#installation) for more details about installation and [dataset_prepare.md](https://github.com/open-mmlab/mmsegmentation/blob/main/docs/en/user_guides/2_dataset_prepare.md#prepare-datasets) for dataset preparation.
 
 You can install mmcv-full by: 
 
@@ -41,9 +45,7 @@ You can obtain detailed results by:
 
 ```
 python ~/SegAliasing/test.py \
-
 ~/configs/upernet_r50-d32_cityscapes.py \
-
 ~checkpoint.pth --eval mIoU
 ```
 
@@ -64,9 +66,13 @@ python ~/SegAliasing/test.py \
 
 Note:
 
-Configs can be found [here](./mmseg_custom/configs).
+Configs can be found
 
-Some checkpoints may yield higher results than those reported. We also recommend pretraining the proposed method on ImageNet to fully unleash its potential.
+ [here](./mmseg_custom/configs).
+
+Some checkpoints may yield higher results than those reported. We also recommend pretraining the proposed method on ImageNet to fully unleash its pote
+
+tial.
 
 ## Citation
 
