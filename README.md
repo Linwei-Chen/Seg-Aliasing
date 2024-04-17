@@ -39,11 +39,20 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 -f https://download.py
 pip install mmcv-full==1.5.3 -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11/index.html
 ```
 
-### Results
-
-You can obtain detailed results by:
+### Train
 
 ```
+CUDA_VISIBLE_DEVICES=0 python ~/train.py \
+config.py \
+--work-dir ./path_to_save_model
+```
+
+### Results
+
+You can obtain detailed results (including mIoU, BIoU, BAcc, FErr, MErr, DErr) by:
+
+```
+python ~/SegAliasing/test.py \
 python ~/SegAliasing/test.py \
 ~/configs/upernet_r50-d32_cityscapes.py \
 ~checkpoint.pth --eval mIoU
@@ -66,9 +75,7 @@ python ~/SegAliasing/test.py \
 
 Note:
 
-Configs can be found
-
- [here](./mmseg_custom/configs).
+Configs can be found [here](./mmseg_custom/configs).
 
 Some checkpoints may yield higher results than those reported. We also recommend pretraining the proposed method on ImageNet to fully unleash its pote
 
