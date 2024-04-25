@@ -560,7 +560,7 @@ def eval_metrics(results,
     for k in _ret_metrics: 
         if 'Acc' == k:
             all_res['FP_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
-            print('FP_rate', ':', all_res['FP_rate'])
+            print('FP_rate (FErr)', ':', all_res['FP_rate'])
         elif 'aAcc' == k:
             all_res['FP_a_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
             print('FP_a_rate', ':', all_res['FP_a_rate'])
@@ -578,7 +578,7 @@ def eval_metrics(results,
     for k in _ret_metrics: 
         if 'Acc' == k:
             all_res['FN_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
-            print('FN_rate', ':', all_res['FN_rate'])
+            print('FN_rate (MErr)', ':', all_res['FN_rate'])
         elif 'aAcc' == k:
             all_res['FN_a_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
             print('FN_a_rate', ':', all_res['FN_a_rate'])
@@ -596,7 +596,7 @@ def eval_metrics(results,
     for k in _ret_metrics: 
         if 'Acc' == k:
             all_res['mdisplacement_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
-            print('mdisplacement_rate', ':', all_res['mdisplacement_rate'])
+            print('mdisplacement_rate (DErr)', ':', all_res['mdisplacement_rate'])
         elif 'aAcc' == k:
             all_res['mdisplacement_a_rate'] = 1.0 - np.nanmean(_ret_metrics[k])
             print('mdisplacement_a_rate', ':', all_res['mdisplacement_a_rate'])
