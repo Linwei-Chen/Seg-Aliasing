@@ -39,6 +39,10 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 -f https://download.py
 pip install mmcv-full==1.5.3 -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11/index.html
 ```
 
+De-aliasing filter and FreqMix are avaliable at [./mmseg_custom/models/backbones/resnet.py](./mmseg_custom/models/backbones/resnet.py)
+
+
+
 ### Train
 
 ```
